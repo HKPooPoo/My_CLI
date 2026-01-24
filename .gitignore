@@ -1,0 +1,10 @@
+.vs/
+.vscode/
+.agent/
+*.lnk
+Thumbs.db
+.DS_Store
+tunnel.log
+*.log
+cloudflared.exe
+.env

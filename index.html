@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!--Metadata-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My CLI</title>
+    <link rel="icon" href="./Image/劍徽.ico" />
+    <meta name="description" content="" />
+    <meta name="keywords" content="" />
+    <meta name="author" content="24212627A_YU Shing Hei" />
+    <!--CSS-->
+    <link rel="stylesheet" href="./CSS/main.css" />
+    <!--JS-->
+    <script src="./JavaScript/navi.js"></script>
+    <script src="./JavaScript/DataManager.js"></script>
+    <script src="./JavaScript/MultiStepButton.js"></script>
+    <script src="./JavaScript/Blackboard.js"></script>
+    <script src="./JavaScript/Preloader.js"></script>
+</head>
+
+<body>
+    <!--Top Hooker-->
+    <a id="top"></a>
+    <div class="header">
+        <img class="header-img" src="./Image/banner-2.png" alt="banner" id="banner" />
+        <div class="status-bar">
+            <div id="login-status">User: Guest (Lv0)</div>
+            <div id="db-status">[DB: CHECKING...]</div>
+        </div>
+    </div>
+    <div class="crt-filter"></div>
+    <!-- Notification Container -->
+    <div id="notification-area" class="notification-container"></div>
+
+    <div class="content">
+        <div id="press-start-overlay">PRESS START</div>
+        <nav class="navi">
+            <div class="navi-item" data-navi="navi-blackboard" data-sound-main="./Sound/UIGeneralCancel.mp3"
+                data-sound-sub="./Sound/UIGeneralFocus.mp3">
+                <div class="navi-item-font">BLACKBOARD</div>
+                <div class="sub-navi-item-indicator"></div>
+                <div class="sub-navi-item-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-page="page-blackboard-log">
+                            <div class="sub-navi-font">LOG</div>
+                        </div>
+                        <div class="sub-navi-item" data-page="page-blackboard-todo">
+                            <div class="sub-navi-font">TODO</div>
+                        </div>
+                        <div class="sub-navi-item" data-page="page-blackboard-misc">
+                            <div class="sub-navi-font">MISC</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi="navi-walkie-typie" data-sound-main="./Sound/UIGeneralOK.mp3"
+                data-sound-sub="./Sound/UIPipboyOK.mp3">
+                <div class="navi-item-font">Walkie-Typie</div>
+                <div class="sub-navi-item-indicator"></div>
+                <div class="sub-navi-item-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-page="page-walkie-typie-connect">
+                            <div class="sub-navi-font">Connect</div>
+                        </div>
+                        <div class="sub-navi-item" data-page="page-walkie-typie-list">
+                            <div class="sub-navi-font">List</div>
+                        </div>
+                        <div class="sub-navi-item" data-page="page-walkie-typie-text">
+                            <div class="sub-navi-font">Text</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="navi-item" data-navi="navi-broadcast" data-sound-main="./Sound/UIGeneralOK.mp3"
+                data-sound-sub="./Sound/UISelectOff.mp3">
+                <div class="navi-item-font">Broadcast</div>
+                <div class="sub-navi-item-indicator"></div>
+                <div class="sub-navi-item-container">
+                    <div class="sub-navi-track">
+                        <div class="sub-navi-item" data-page="page-broadcast-official">
+                            <div class="sub-navi-font">Official</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+        <div class="sub-navi-mask"></div>
+
+        <!-- Page Content Sections -->
+        <div class="page-container">
+            <div class="page" id="page-blackboard-log">
+                <div id="stack-status">
+                    INITIALIZING...
+                </div>
+                <button class="push" id="btn-push"></button>
+                <div class="blackboard-container">
+                    <textarea id="blackboard-input" placeholder="Initiating Blackboard Terminal..."></textarea>
+                </div>
+                <button class="pull" id="btn-pull"></button>
+            </div>
+            <div class="page" id="page-blackboard-todo">
+                <h2>TODO LIST (UNDER CONSTRUCTION)</h2>
+            </div>
+            <div class="page" id="page-blackboard-misc">
+                <div class="auth-container">
+                    <div class="auth-box">
+                        <div class="auth-title">ACCOUNT AUTHENTICATION</div>
+                        <input type="text" id="auth-username" class="terminal-input" placeholder="ACCESS ID (USERNAME)"
+                            maxlength="69">
+                        <input type="password" id="auth-password" class="terminal-input" placeholder="PASSCODE"
+                            maxlength="255">
+                        <button id="btn-login" class="terminal-btn">LOGIN</button>
+                        <button id="btn-register" class="terminal-btn">REGISTER</button>
+                        <button id="btn-logout" class="terminal-btn" style="display: none;">LOGOUT</button>
+                    </div>
+
+                    <div class="sync-controls">
+                        <button id="btn-commit" class="terminal-btn">COMMIT</button>
+                        <button id="btn-checkout" class="terminal-btn">CHECKOUT</button>
+                    </div>
+
+                    <button id="btn-wipe" class="terminal-btn btn-state-2" style="margin-top: 32px;">WIPE
+                        COOKIES</button>
+                </div>
+            </div>
+            <div class="page" id="page-walkie-typie-connect">
+            </div>
+            <div class="page" id="page-walkie-typie-list">
+            </div>
+            <div class="page" id="page-walkie-typie-text">
+            </div>
+            <div class="page" id="page-broadcast-official">
+            </div>
+        </div>
+    </div>
+
+    <!-- Universal Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2026 My CLI | Designed by 24212627A_YU Shing Hei</p>
+        </div>
+    </footer>
+</body>
+
+</html>
