@@ -8,19 +8,55 @@ class DataManager {
             isLoggedIn: false
         };
 
-        // Blackboard Data Structure
-        // view_index: 0 = Active Draft, 1 = History[0], etc.
-        this.bbData = JSON.parse(localStorage.getItem('wpp_blackboard_data')) || {
+        // Multi-context Blackboard Data Structure
+        // Supports 'log', 'todo', or any future context
+        // Migration: If old 'wpp_blackboard_data' exists, migrate it to 'log'
+        this.blackboards = {};
+        this._initBlackboard('log');
+        this._initBlackboard('todo');
+    }
+
+    // --- Private: Initialize a blackboard context ---
+    _initBlackboard(context) {
+        const storageKey = `wpp_blackboard_${context}`;
+
+        // Migration for old data (only for 'log')
+        if (context === 'log') {
+            const oldData = localStorage.getItem('wpp_blackboard_data');
+            if (oldData && !localStorage.getItem(storageKey)) {
+                localStorage.setItem(storageKey, oldData);
+                localStorage.removeItem('wpp_blackboard_data'); // Clean up old key
+            }
+        }
+
+        this.blackboards[context] = JSON.parse(localStorage.getItem(storageKey)) || {
             current_draft: '',
             history: [],
             view_index: 0
         };
     }
 
+    // --- Private: Get blackboard data for a context ---
+    _getBB(context) {
+        if (!this.blackboards[context]) {
+            this._initBlackboard(context);
+        }
+        return this.blackboards[context];
+    }
+
     // --- Persistence ---
-    saveLocal() {
+    saveLocal(context = null) {
         localStorage.setItem('wpp_user_data', JSON.stringify(this.userData));
-        localStorage.setItem('wpp_blackboard_data', JSON.stringify(this.bbData));
+
+        if (context) {
+            // Save specific context
+            localStorage.setItem(`wpp_blackboard_${context}`, JSON.stringify(this.blackboards[context]));
+        } else {
+            // Save all contexts
+            for (const ctx in this.blackboards) {
+                localStorage.setItem(`wpp_blackboard_${ctx}`, JSON.stringify(this.blackboards[ctx]));
+            }
+        }
     }
 
     // --- Account System ---
@@ -52,163 +88,136 @@ class DataManager {
         this.saveLocal();
     }
 
-    // --- Blackboard Logic ---
+    // --- Blackboard Logic (Context-aware) ---
 
     // Get content for display based on view_index
-    getDisplayContent() {
-        if (this.bbData.view_index === 0) {
-            return this.bbData.current_draft;
+    getDisplayContent(context = 'log') {
+        const bb = this._getBB(context);
+        if (bb.view_index === 0) {
+            return bb.current_draft;
         } else {
-            // view_index 1 corresponds to history[0]
-            const historyIndex = this.bbData.view_index - 1;
-            if (historyIndex >= 0 && historyIndex < this.bbData.history.length) {
-                return this.bbData.history[historyIndex];
+            const historyIndex = bb.view_index - 1;
+            if (historyIndex >= 0 && historyIndex < bb.history.length) {
+                return bb.history[historyIndex];
             }
-            return ''; // Should not happen if logic is correct
+            return '';
         }
     }
 
     // Update content (Allowed for both Active and History)
-    updateDraft(text) {
-        if (this.bbData.view_index === 0) {
-            this.bbData.current_draft = text;
+    updateDraft(context = 'log', text) {
+        const bb = this._getBB(context);
+        if (bb.view_index === 0) {
+            bb.current_draft = text;
         } else {
-            // Update history entry in-place
-            const historyIndex = this.bbData.view_index - 1;
-            if (historyIndex >= 0 && historyIndex < this.bbData.history.length) {
-                this.bbData.history[historyIndex] = text;
+            const historyIndex = bb.view_index - 1;
+            if (historyIndex >= 0 && historyIndex < bb.history.length) {
+                bb.history[historyIndex] = text;
             }
         }
-        this.saveLocal();
+        this.saveLocal(context);
         return true;
     }
 
-    getStackStatus() {
-        // Returns string describing current pool status
-        if (this.bbData.view_index === 0) {
-            const count = this.bbData.history.length;
-            // ACTIVE DRAFT shows nothing or just count? User said "Active Draft shows no font, but digits only"
-            // Interpreted as just the count of history items? Or count of drafts?
-            // "Active Draft shows no font, but digits only"
-            // Original: ACTIVE DRAFT [HIST: count/10]
-            // New: count
-            return `${count}`;
+    getStackStatus(context = 'log') {
+        const bb = this._getBB(context);
+        if (bb.view_index === 0) {
+            return `${bb.history.length}`;
         } else {
-            const current = this.bbData.view_index;
-            const total = this.bbData.history.length;
-            // History View
-            return `${current}/${total}`;
+            return `${bb.view_index}/${bb.history.length}`;
         }
     }
 
-    // Clear Local Blackboard Data
-    clearBlackboardData() {
-        this.bbData = {
+    // Clear Local Blackboard Data for a specific context
+    clearBlackboardData(context = 'log') {
+        this.blackboards[context] = {
             current_draft: '',
             history: [],
             view_index: 0
         };
-        this.saveLocal();
+        this.saveLocal(context);
+        return true;
+    }
+
+    // Clear ALL Blackboard Data (all contexts)
+    clearAllBlackboardData() {
+        for (const ctx in this.blackboards) {
+            this.clearBlackboardData(ctx);
+        }
         return true;
     }
 
     // Push (Swipe Up): Save current and move to new
-    // If in history, move towards active.
-    push() {
-        if (this.bbData.view_index > 0) {
-            // In history, moving back to future/active
-            this.bbData.view_index--;
-            this.saveLocal();
-            return { action: 'nav', content: this.getDisplayContent() };
+    push(context = 'log') {
+        const bb = this._getBB(context);
+        if (bb.view_index > 0) {
+            bb.view_index--;
+            this.saveLocal(context);
+            return { action: 'nav', content: this.getDisplayContent(context) };
         } else {
-            // In Active, commit to history and clear
-
             // VALIDATION: Prevent pushing empty content
-            if (!this.bbData.current_draft || this.bbData.current_draft.trim() === '') {
-                return { action: 'ignore', content: this.bbData.current_draft };
+            if (!bb.current_draft || bb.current_draft.trim() === '') {
+                return { action: 'ignore', content: bb.current_draft };
             }
 
-            // Push current to history (Stack: Add to front/top? User said "Stack".
-
-            // Push current to history (Stack: Add to front/top? User said "Stack". 
-            // array.unshift() adds to beginning. array.push() adds to end.
-            // If History[0] is newest. "Swipe Down (???) -> view index 1".
-            // So View Index 1 should be the one just pushed.
-            // So we should use unshift (add to index 0).
-            // History = [Newest, ..., Oldest]
-
-            // Limit history to 10
-            this.bbData.history.unshift(this.bbData.current_draft);
-            if (this.bbData.history.length > 10) {
-                this.bbData.history.pop();
+            // Push current to history (Stack: newest first)
+            bb.history.unshift(bb.current_draft);
+            if (bb.history.length > 10) {
+                bb.history.pop();
             }
 
-            this.bbData.current_draft = '';
-            // view_index remains 0
-            this.saveLocal();
+            bb.current_draft = '';
+            this.saveLocal(context);
             return { action: 'new', content: '' };
         }
     }
 
     // Pull (Swipe Down): View history
-    pull() {
-        // Check if there is history to view
-        // Next index = view_index + 1
-        // If next index corresponds to valid history (index - 1 < length)
-        const nextIndex = this.bbData.view_index + 1;
+    pull(context = 'log') {
+        const bb = this._getBB(context);
+        const nextIndex = bb.view_index + 1;
         const historyIdx = nextIndex - 1;
 
-        if (historyIdx < this.bbData.history.length) {
-            this.bbData.view_index = nextIndex;
-            this.saveLocal();
-            return { action: 'nav', content: this.bbData.history[historyIdx] };
+        if (historyIdx < bb.history.length) {
+            bb.view_index = nextIndex;
+            this.saveLocal(context);
+            return { action: 'nav', content: bb.history[historyIdx] };
         } else {
-            // End of history
             return { action: 'stop', content: null };
         }
     }
 
     // --- Sync (Git Style) ---
-    async commit() {
+    // Note: Currently syncs only 'log' context. Can be extended to sync all.
+    async commit(context = 'log') {
         if (!this.userData.isLoggedIn) return { success: false, message: 'Not logged in' };
 
-        // Send: { current_draft, history } (Don't need view_index usually, or maybe user wants to sync that too?
-        // Plan says: "sync.php receives ... inserts ...". 
-        // We'll send the raw data.
-
-        // Note: The history array in bbData is [Newest, ..., Oldest].
-        // PHP expects an array. It inserts them.
-        // If PHP inserts in loop, standard array order is preserved in DB insert order?
-        // PHP `foreach` iterates 0..N.
-        // We need to ensure that when we Checkout (Select All Order By ID ASC), we get [Newest...Oldest]?
-        // Or [Oldest...Newest]?
-        // Database "ORDER BY created_at" or ID might be safest.
-
-        // Let's send exactly what we have.
-        // When checking out, we want to reconstruct `this.bbData.history`.
+        const bb = this._getBB(context);
         const payload = {
             action: 'commit',
             username: this.userData.username,
+            slot_type: context,
             data: {
-                current_draft: this.bbData.current_draft,
-                history: this.bbData.history
+                current_draft: bb.current_draft,
+                history: bb.history
             }
         };
 
         return await this.post('sync.php', payload);
     }
 
-    async checkout() {
+    async checkout(context = 'log') {
         if (!this.userData.isLoggedIn) return { success: false, message: 'Not logged in' };
 
-        const res = await this.post('sync.php', { action: 'checkout', username: this.userData.username });
+        const res = await this.post('sync.php', { action: 'checkout', username: this.userData.username, slot_type: context });
         if (res.success) {
-            // Overwrite local
-            this.bbData.current_draft = res.data.current_draft;
-            this.bbData.history = res.data.history;
-            this.bbData.view_index = 0; // Reset view
-            this.saveLocal();
-            return { success: true, content: this.getDisplayContent() };
+            const bb = this._getBB(context);
+            bb.current_draft = res.data.current_draft;
+            bb.history = res.data.history;
+            // Show most recent history item if available, otherwise show draft
+            bb.view_index = (bb.history && bb.history.length > 0) ? 1 : 0;
+            this.saveLocal(context);
+            return { success: true, content: this.getDisplayContent(context) };
         }
         return res;
     }
@@ -228,5 +237,3 @@ class DataManager {
         }
     }
 }
-
-

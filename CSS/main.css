@@ -627,7 +627,7 @@ h2 {
     /* Center textarea vertically */
 }
 
-#blackboard-input {
+.blackboard-input {
     width: 100%;
     height: 60vh;
     /* Adjust height */
@@ -644,7 +644,7 @@ h2 {
     box-sizing: border-box;
 }
 
-#blackboard-input::placeholder {
+.blackboard-input::placeholder {
     color: rgba(50, 255, 50, 0.3);
 }
 
@@ -805,7 +805,7 @@ h2 {
     padding-top: 32px;
 }
 
-#stack-status {
+.stack-status {
     position: absolute;
     top: 8px;
     right: 64px;

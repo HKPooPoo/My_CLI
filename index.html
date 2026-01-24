@@ -43,6 +43,7 @@
                 <div class="sub-navi-item-indicator"></div>
                 <div class="sub-navi-item-container">
                     <div class="sub-navi-track">
+                        <!--Let function of log and todo be the same, just two seperate blackboard data-->
                         <div class="sub-navi-item" data-page="page-blackboard-log">
                             <div class="sub-navi-font">LOG</div>
                         </div>
@@ -61,14 +62,17 @@
                 <div class="sub-navi-item-indicator"></div>
                 <div class="sub-navi-item-container">
                     <div class="sub-navi-track">
-                        <div class="sub-navi-item" data-page="page-walkie-typie-connect">
-                            <div class="sub-navi-font">Connect</div>
-                        </div>
+                        <!--List: list text objects-->
                         <div class="sub-navi-item" data-page="page-walkie-typie-list">
                             <div class="sub-navi-font">List</div>
                         </div>
+                        <!--Text: Conversation page-->
                         <div class="sub-navi-item" data-page="page-walkie-typie-text">
                             <div class="sub-navi-font">Text</div>
+                        </div>
+                        <!--Connect: Connect object by their uid-->
+                        <div class="sub-navi-item" data-page="page-walkie-typie-connect">
+                            <div class="sub-navi-font">Connect</div>
                         </div>
                     </div>
                 </div>
@@ -80,7 +84,11 @@
                 <div class="sub-navi-item-container">
                     <div class="sub-navi-track">
                         <div class="sub-navi-item" data-page="page-broadcast-official">
+                            <!--Default channel = Official; This must be changed according to picked channel at List-->
                             <div class="sub-navi-font">Official</div>
+                        </div>
+                        <div class="sub-navi-item" data-page="page-broadcast-list">
+                            <div class="sub-navi-font">List</div>
                         </div>
                     </div>
                 </div>
@@ -91,17 +99,26 @@
         <!-- Page Content Sections -->
         <div class="page-container">
             <div class="page" id="page-blackboard-log">
-                <div id="stack-status">
+                <div id="stack-status-log" class="stack-status">
                     INITIALIZING...
                 </div>
-                <button class="push" id="btn-push"></button>
+                <button class="push" id="btn-push-log"></button>
                 <div class="blackboard-container">
-                    <textarea id="blackboard-input" placeholder="Initiating Blackboard Terminal..."></textarea>
+                    <textarea id="blackboard-input-log" class="blackboard-input"
+                        placeholder="Initiating Blackboard Terminal..."></textarea>
                 </div>
-                <button class="pull" id="btn-pull"></button>
+                <button class="pull" id="btn-pull-log"></button>
             </div>
             <div class="page" id="page-blackboard-todo">
-                <h2>TODO LIST (UNDER CONSTRUCTION)</h2>
+                <div id="stack-status-todo" class="stack-status">
+                    INITIALIZING...
+                </div>
+                <button class="push" id="btn-push-todo"></button>
+                <div class="blackboard-container">
+                    <textarea id="blackboard-input-todo" class="blackboard-input"
+                        placeholder="Initiating TODO Terminal..."></textarea>
+                </div>
+                <button class="pull" id="btn-pull-todo"></button>
             </div>
             <div class="page" id="page-blackboard-misc">
                 <div class="auth-container">
@@ -125,13 +142,15 @@
                         LocalStorage</button>
                 </div>
             </div>
-            <div class="page" id="page-walkie-typie-connect">
-            </div>
             <div class="page" id="page-walkie-typie-list">
             </div>
             <div class="page" id="page-walkie-typie-text">
             </div>
+            <div class="page" id="page-walkie-typie-connect">
+            </div>
             <div class="page" id="page-broadcast-official">
+            </div>
+            <div class="page" id="page-broadcast-list">
             </div>
         </div>
     </div>
