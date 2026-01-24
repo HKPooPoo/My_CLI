@@ -756,7 +756,7 @@ h2 {
     color: var(--text-green);
     font-family: inherit;
     cursor: pointer;
-    text-transform: uppercase;
+    /* text-transform: uppercase; */
     transition: all 0.2s;
     margin-top: 8px;
 }

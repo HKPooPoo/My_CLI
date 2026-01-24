@@ -175,7 +175,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Wipe Memory ---
     const btnWipe = document.getElementById('btn-wipe');
-    new MultiStepButton(btnWipe, ['WIPE COOKIES', 'WIPE COOKIES x 3', 'WIPE COOKIES x 2', 'WIPE COOKIES !', 'WIPING...'], () => {
+    new MultiStepButton(btnWipe, ['WIPE LocalStorage', 'WIPE LocalStorage x 3', 'WIPE LocalStorage x 2', 'WIPE LocalStorage !', 'WIPING...'], () => {
         dm.clearBlackboardData();
         blackboardInput.value = '';
         updateStackInfo();
