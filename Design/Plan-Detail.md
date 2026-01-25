@@ -88,7 +88,7 @@
 *   **目標**: 完成所有靜態 UI 交互與「Press Start」機制。
 *   **任務**:
     1.  [x] [前端] 實作 `Press Start` 覆蓋層 (Overlay) 與點擊進入邏輯。
-    2.  [x] [交互] 優化 Mobile 端觸摸滑動 (Touch Event) 支持 (解決 `navi.js` 的缺口)。
+    2.  [x] [交互] 優化 Mobile 端觸摸滑動 (Touch Event) 支持 (解決 `Navi.js` 的缺口)。
     3.  [x] [交互] 完善音效系統 (確保在 Press Start 後解鎖 AudioContext)。
     4.  [ ] [UI] 實現 List 頁面的 Highlight Cursor 滾動效果。
 

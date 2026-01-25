@@ -70,35 +70,68 @@ class BlackboardUI {
 }
 
 
-// --- Main Application Logic ---
-document.addEventListener('DOMContentLoaded', () => {
-    const dm = new DataManager();
-    const statusDiv = document.getElementById('login-status');
-    const dbStatusDiv = document.getElementById('db-status');
-    const notifArea = document.getElementById('notification-area');
+/**
+ * BlackboardManager
+ * Encapsulates the main application logic, event listeners, and UI components
+ * related to the Blackboard notification, authentication, and sync systems.
+ */
+class BlackboardManager {
+    constructor() {
+        this.dm = new DataManager();
+        this.boards = {}; // Store BlackboardUI instances
 
-    // --- Blackboard Instances ---
-    const logBoard = new BlackboardUI(dm, 'log', {
-        input: document.getElementById('blackboard-input-log'),
-        btnPush: document.getElementById('btn-push-log'),
-        btnPull: document.getElementById('btn-pull-log'),
-        stackStatus: document.getElementById('stack-status-log')
-    });
+        this.elements = {
+            statusDiv: document.getElementById('login-status'),
+            dbStatusDiv: document.getElementById('db-status'),
+            notifArea: document.getElementById('notification-area'),
+            authTitle: document.querySelector('.auth-title'),
+            // Login UI
+            authUsername: document.getElementById('auth-username'),
+            authPassword: document.getElementById('auth-password'),
+            btnLogin: document.getElementById('btn-login'),
+            btnRegister: document.getElementById('btn-register'), // Note: this might be re-wrapped by MultiStepButton logic which doesn't replace element but adds listener
+            btnLogout: document.getElementById('btn-logout'),
+            // Sync Buttons
+            btnCommit: document.getElementById('btn-commit'),
+            btnCheckout: document.getElementById('btn-checkout'),
+            btnWipe: document.getElementById('btn-wipe')
+        };
 
-    const todoBoard = new BlackboardUI(dm, 'todo', {
-        input: document.getElementById('blackboard-input-todo'),
-        btnPush: document.getElementById('btn-push-todo'),
-        btnPull: document.getElementById('btn-pull-todo'),
-        stackStatus: document.getElementById('stack-status-todo')
-    });
+        this.init();
+    }
 
-    // --- Notification System ---
-    function showNotification(message, isError = false) {
+    init() {
+        this.initBlackboards();
+        this.initStatusCheck();
+        this.initAuthListeners();
+        this.initSyncListeners();
+        this.initWipeListener();
+    }
+
+    // --- Sub-Components Initialization ---
+    initBlackboards() {
+        this.boards.log = new BlackboardUI(this.dm, 'log', {
+            input: document.getElementById('blackboard-input-log'),
+            btnPush: document.getElementById('btn-push-log'),
+            btnPull: document.getElementById('btn-pull-log'),
+            stackStatus: document.getElementById('stack-status-log')
+        });
+
+        this.boards.todo = new BlackboardUI(this.dm, 'todo', {
+            input: document.getElementById('blackboard-input-todo'),
+            btnPush: document.getElementById('btn-push-todo'),
+            btnPull: document.getElementById('btn-pull-todo'),
+            stackStatus: document.getElementById('stack-status-todo')
+        });
+    }
+
+    // --- Status & Notifications ---
+    showNotification(message, isError = false) {
         const toast = document.createElement('div');
         toast.className = `retro-toast ${isError ? 'error' : ''}`;
         toast.textContent = `> ${message}`;
 
-        notifArea.appendChild(toast);
+        this.elements.notifArea.appendChild(toast);
 
         // Auto remove
         setTimeout(() => {
@@ -107,126 +140,136 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 3000);
     }
 
-    // --- Status Update & UI Toggle ---
-    function updateStatus() {
+    updateStatus() {
         const uiLogin = [
-            document.getElementById('auth-username'),
-            document.getElementById('auth-password'),
-            document.getElementById('btn-login'),
-            document.getElementById('btn-register')
+            this.elements.authUsername,
+            this.elements.authPassword,
+            this.elements.btnLogin,
+            this.elements.btnRegister
         ];
-        const uiLogout = [document.getElementById('btn-logout')];
-        const authTitle = document.querySelector('.auth-title');
+        const uiLogout = [this.elements.btnLogout];
 
-        if (dm.userData.isLoggedIn) {
-            statusDiv.innerHTML = `UID:&nbsp;<span class="truncated-name">${dm.userData.username}</span>&nbsp;(Lv${dm.userData.level})`;
-            if (authTitle) authTitle.textContent = `WELCOME, ${dm.userData.username}`;
+        if (this.dm.userData.isLoggedIn) {
+            this.elements.statusDiv.innerHTML = `UID:&nbsp;<span class="truncated-name">${this.dm.userData.username}</span>&nbsp;(Lv${this.dm.userData.level})`;
+            if (this.elements.authTitle) this.elements.authTitle.textContent = `WELCOME, ${this.dm.userData.username}`;
 
             uiLogin.forEach(el => { if (el) el.style.display = 'none'; });
             uiLogout.forEach(el => { if (el) el.style.display = 'block'; });
         } else {
-            statusDiv.textContent = `User: Guest (Lv0)`;
-            if (authTitle) authTitle.textContent = 'ACCOUNT AUTHENTICATION';
+            this.elements.statusDiv.textContent = `User: Guest (Lv0)`;
+            if (this.elements.authTitle) this.elements.authTitle.textContent = 'ACCOUNT AUTHENTICATION';
 
             uiLogin.forEach(el => { if (el) el.style.display = 'block'; });
             uiLogout.forEach(el => { if (el) el.style.display = 'none'; });
         }
     }
 
-    async function checkDB() {
-        const isOnline = await dm.checkConnection();
+    async checkDB() {
+        const isOnline = await this.dm.checkConnection();
         if (isOnline) {
-            dbStatusDiv.innerHTML = 'DB:&nbsp;<span class="db-dot online"></span>';
+            this.elements.dbStatusDiv.innerHTML = 'DB:&nbsp;<span class="db-dot online"></span>';
         } else {
-            dbStatusDiv.innerHTML = 'DB:&nbsp;<span class="db-dot offline"></span>';
+            this.elements.dbStatusDiv.innerHTML = 'DB:&nbsp;<span class="db-dot offline"></span>';
         }
     }
 
-    // Initial Checks
-    updateStatus();
-    checkDB();
-    setInterval(checkDB, 30000);
+    initStatusCheck() {
+        this.updateStatus();
+        this.checkDB();
+        // Bind 'this' to avoid context loss in setInterval
+        setInterval(() => this.checkDB(), 30000);
+    }
 
     // --- Auth Logic ---
-    const userParams = () => [
-        document.getElementById('auth-username').value,
-        document.getElementById('auth-password').value
-    ];
+    getUserParams() {
+        return [
+            this.elements.authUsername.value,
+            this.elements.authPassword.value
+        ];
+    }
 
-    const btnLogin = document.getElementById('btn-login');
-    btnLogin.addEventListener('click', async () => {
-        const [u, p] = userParams();
-        if (!u || !p) return showNotification('Credentials required.', true);
+    initAuthListeners() {
+        // Login
+        this.elements.btnLogin.addEventListener('click', async () => {
+            const [u, p] = this.getUserParams();
+            if (!u || !p) return this.showNotification('Credentials required.', true);
 
-        const res = await dm.login(u, p);
-        showNotification(res.message, !res.success);
-        updateStatus();
-        checkDB();
-    });
+            const res = await this.dm.login(u, p);
+            this.showNotification(res.message, !res.success);
+            this.updateStatus();
+            this.checkDB();
+        });
 
-    const btnRegister = document.getElementById('btn-register');
-    new MultiStepButton(btnRegister, ['REGISTER', 'REGISTER x 3', 'REGISTER x 2', 'REGISTER !', 'CREATING...'], async () => {
-        const [u, p] = userParams();
-        if (!u || !p) return showNotification('Credentials required.', true);
+        // Register (MultiStep)
+        new MultiStepButton(this.elements.btnRegister, ['REGISTER', 'REGISTER x 3', 'REGISTER x 2', 'REGISTER !', 'CREATING...'], async () => {
+            const [u, p] = this.getUserParams();
+            if (!u || !p) return this.showNotification('Credentials required.', true);
 
-        const res = await dm.register(u, p);
-        showNotification(res.message, !res.success);
-        checkDB();
-    });
+            const res = await this.dm.register(u, p);
+            this.showNotification(res.message, !res.success);
+            this.checkDB();
+        });
 
-    // --- Logout with Triple Click ---
-    const btnLogout = document.getElementById('btn-logout');
-    if (btnLogout) {
-        new MultiStepButton(btnLogout, ['LOGOUT', 'LOGOUT x 3', 'LOGOUT x 2', 'LOGOUT !', 'LOGGING OUT...'], () => {
-            dm.logout();
-            showNotification('Logged out successfully.');
-            updateStatus();
-            document.getElementById('auth-username').value = '';
-            document.getElementById('auth-password').value = '';
+        // Logout (MultiStep)
+        if (this.elements.btnLogout) {
+            new MultiStepButton(this.elements.btnLogout, ['LOGOUT', 'LOGOUT x 3', 'LOGOUT x 2', 'LOGOUT !', 'LOGGING OUT...'], () => {
+                this.dm.logout();
+                this.showNotification('Logged out successfully.');
+                this.updateStatus();
+                this.elements.authUsername.value = '';
+                this.elements.authPassword.value = '';
+            });
+        }
+    }
+
+    // --- Sync Logic ---
+    initSyncListeners() {
+        // Commit
+        new MultiStepButton(this.elements.btnCommit, ['COMMIT', 'COMMIT x 3', 'COMMIT x 2', 'COMMIT !', 'UPLOADING...'], async () => {
+            const resLog = await this.dm.commit('log');
+            const resTodo = await this.dm.commit('todo');
+
+            if (resLog.success && resTodo.success) {
+                this.showNotification('All data committed successfully.');
+            } else if (resLog.success) {
+                this.showNotification('LOG committed. TODO failed: ' + resTodo.message, true);
+            } else if (resTodo.success) {
+                this.showNotification('TODO committed. LOG failed: ' + resLog.message, true);
+            } else {
+                this.showNotification('Commit failed: ' + resLog.message, true);
+            }
+            this.checkDB();
+        });
+
+        // Checkout
+        new MultiStepButton(this.elements.btnCheckout, ['CHECKOUT', 'CHECKOUT x 3', 'CHECKOUT x 2', 'CHECKOUT !', 'DOWNLOADING...'], async () => {
+            const resLog = await this.dm.checkout('log');
+            const resTodo = await this.dm.checkout('todo');
+
+            if (resLog.success || resTodo.success) {
+                // Refresh both boards
+                this.boards.log.refresh();
+                this.boards.todo.refresh();
+                this.showNotification('Checkout Successful. Blackboards Updated.');
+            } else {
+                this.showNotification(resLog.message || resTodo.message, true);
+            }
+            this.checkDB();
         });
     }
 
-    // --- Commit / Checkout (Titanfall Style) ---
-    // Commit and Checkout now sync BOTH log and todo
-    const btnCommit = document.getElementById('btn-commit');
-    new MultiStepButton(btnCommit, ['COMMIT', 'COMMIT x 3', 'COMMIT x 2', 'COMMIT !', 'UPLOADING...'], async () => {
-        const resLog = await dm.commit('log');
-        const resTodo = await dm.commit('todo');
+    // --- Wipe Logic ---
+    initWipeListener() {
+        new MultiStepButton(this.elements.btnWipe, ['WIPE LocalStorage', 'WIPE LocalStorage x 3', 'WIPE LocalStorage x 2', 'WIPE LocalStorage !', 'WIPING...'], () => {
+            this.dm.clearAllBlackboardData();
+            this.boards.log.refresh();
+            this.boards.todo.refresh();
+            this.showNotification('All Local Blackboard Memory Wiped.');
+        });
+    }
+}
 
-        if (resLog.success && resTodo.success) {
-            showNotification('All data committed successfully.');
-        } else if (resLog.success) {
-            showNotification('LOG committed. TODO failed: ' + resTodo.message, true);
-        } else if (resTodo.success) {
-            showNotification('TODO committed. LOG failed: ' + resLog.message, true);
-        } else {
-            showNotification('Commit failed: ' + resLog.message, true);
-        }
-        checkDB();
-    });
-
-    const btnCheckout = document.getElementById('btn-checkout');
-    new MultiStepButton(btnCheckout, ['CHECKOUT', 'CHECKOUT x 3', 'CHECKOUT x 2', 'CHECKOUT !', 'DOWNLOADING...'], async () => {
-        const resLog = await dm.checkout('log');
-        const resTodo = await dm.checkout('todo');
-
-        if (resLog.success || resTodo.success) {
-            // Refresh both boards
-            logBoard.refresh();
-            todoBoard.refresh();
-            showNotification('Checkout Successful. Blackboards Updated.');
-        } else {
-            showNotification(resLog.message || resTodo.message, true);
-        }
-        checkDB();
-    });
-
-    // --- Wipe Memory (Wipes ALL blackboards) ---
-    const btnWipe = document.getElementById('btn-wipe');
-    new MultiStepButton(btnWipe, ['WIPE LocalStorage', 'WIPE LocalStorage x 3', 'WIPE LocalStorage x 2', 'WIPE LocalStorage !', 'WIPING...'], () => {
-        dm.clearAllBlackboardData();
-        logBoard.refresh();
-        todoBoard.refresh();
-        showNotification('All Local Blackboard Memory Wiped.');
-    });
+// --- Main Entry ---
+document.addEventListener('DOMContentLoaded', () => {
+    window.blackboardManager = new BlackboardManager();
 });

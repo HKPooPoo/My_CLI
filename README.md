@@ -51,7 +51,7 @@
     *   `pull()`: 讀取歷史堆疊中的舊資料。
     *   `commit()` / `checkout()`: 處理與 MySQL 資料庫的同步。
 
-#### `JavaScript/navi.js`
+#### `JavaScript/Navi.js`
 負責**導航與互動體驗**。
 *   **職責:** 處理選單切換 (Navi / Sub-Navi)、頁面路由、滑鼠滾輪與觸控互動。
 *   **特性:**

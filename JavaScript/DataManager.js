@@ -1,42 +1,58 @@
+/**
+ * DataManager - Handles all data persistence, API communication, and state management.
+ * 
+ * Responsibilities:
+ * 1. LocalStorage Management (User Session, Blackboard Contexts)
+ * 2. API Communication (Auth, Sync) with backend PHP
+ * 3. Business Logic for Blackboard Stack (Push/Pull/History)
+ */
 class DataManager {
     constructor() {
-        // URL updated by Cloudflare Tunnel (Warning: Changes on restart)
+        // --- Configuration ---
+        // URL updated by Cloudflare Tunnel automatically
         this.apiBase = 'https://worker-wild-ali-loads.trycloudflare.com/My/PHP/';
+
+        // --- State Initialization ---
+
+        // 1. User Session
         this.userData = JSON.parse(localStorage.getItem('wpp_user_data')) || {
             username: null,
             level: 0,
             isLoggedIn: false
         };
 
-        // Multi-context Blackboard Data Structure
-        // Supports 'log', 'todo', or any future context
-        // Migration: If old 'wpp_blackboard_data' exists, migrate it to 'log'
+        // 2. Blackboard Contexts (Supports 'log', 'todo', etc.)
         this.blackboards = {};
+
+        // Initialize supported contexts
         this._initBlackboard('log');
         this._initBlackboard('todo');
     }
 
-    // --- Private: Initialize a blackboard context ---
+    // ==========================================
+    // SECTION: Internal State Management
+    // ==========================================
+
     _initBlackboard(context) {
         const storageKey = `wpp_blackboard_${context}`;
 
-        // Migration for old data (only for 'log')
+        // Legacy Migration (Unique to 'log')
         if (context === 'log') {
             const oldData = localStorage.getItem('wpp_blackboard_data');
             if (oldData && !localStorage.getItem(storageKey)) {
                 localStorage.setItem(storageKey, oldData);
-                localStorage.removeItem('wpp_blackboard_data'); // Clean up old key
+                localStorage.removeItem('wpp_blackboard_data');
             }
         }
 
+        // Load or Create Default
         this.blackboards[context] = JSON.parse(localStorage.getItem(storageKey)) || {
             current_draft: '',
-            history: [],
-            view_index: 0
+            history: [],   // Stack: [Newest, ..., Oldest]
+            view_index: 0  // 0: Draft, 1+: History[0], etc.
         };
     }
 
-    // --- Private: Get blackboard data for a context ---
     _getBB(context) {
         if (!this.blackboards[context]) {
             this._initBlackboard(context);
@@ -44,8 +60,8 @@ class DataManager {
         return this.blackboards[context];
     }
 
-    // --- Persistence ---
     saveLocal(context = null) {
+        // Always save user session
         localStorage.setItem('wpp_user_data', JSON.stringify(this.userData));
 
         if (context) {
@@ -59,14 +75,21 @@ class DataManager {
         }
     }
 
-    // --- Account System ---
+    // ==========================================
+    // SECTION: Authentication & Network
+    // ==========================================
+
+    async checkConnection() {
+        const res = await this._post('auth.php', { action: 'ping' });
+        return res.success;
+    }
+
     async register(username, password) {
-        const res = await this.post('auth.php', { action: 'register', username, password });
-        return res;
+        return await this._post('auth.php', { action: 'register', username, password });
     }
 
     async login(username, password) {
-        const res = await this.post('auth.php', { action: 'login', username, password });
+        const res = await this._post('auth.php', { action: 'login', username, password });
         if (res.success) {
             this.userData = {
                 username: username,
@@ -78,24 +101,24 @@ class DataManager {
         return res;
     }
 
-    async checkConnection() {
-        const res = await this.post('auth.php', { action: 'ping' });
-        return res.success;
-    }
-
     logout() {
         this.userData = { username: null, level: 0, isLoggedIn: false };
         this.saveLocal();
     }
 
-    // --- Blackboard Logic (Context-aware) ---
+    // ==========================================
+    // SECTION: Blackboard Operations (Logic)
+    // ==========================================
 
-    // Get content for display based on view_index
+    /**
+     * READ: Get what should be shown on the screen based on view_index
+     */
     getDisplayContent(context = 'log') {
         const bb = this._getBB(context);
         if (bb.view_index === 0) {
             return bb.current_draft;
         } else {
+            // view_index 1 maps to history[0]
             const historyIndex = bb.view_index - 1;
             if (historyIndex >= 0 && historyIndex < bb.history.length) {
                 return bb.history[historyIndex];
@@ -104,12 +127,15 @@ class DataManager {
         }
     }
 
-    // Update content (Allowed for both Active and History)
+    /**
+     * WRITE: Update the content of the currently viewed slot (Draft or History)
+     */
     updateDraft(context = 'log', text) {
         const bb = this._getBB(context);
         if (bb.view_index === 0) {
             bb.current_draft = text;
         } else {
+            // Allow editing history items in place
             const historyIndex = bb.view_index - 1;
             if (historyIndex >= 0 && historyIndex < bb.history.length) {
                 bb.history[historyIndex] = text;
@@ -119,6 +145,9 @@ class DataManager {
         return true;
     }
 
+    /**
+     * INFO: Get status string like "0" or "3/10"
+     */
     getStackStatus(context = 'log') {
         const bb = this._getBB(context);
         if (bb.view_index === 0) {
@@ -128,40 +157,32 @@ class DataManager {
         }
     }
 
-    // Clear Local Blackboard Data for a specific context
-    clearBlackboardData(context = 'log') {
-        this.blackboards[context] = {
-            current_draft: '',
-            history: [],
-            view_index: 0
-        };
-        this.saveLocal(context);
-        return true;
-    }
-
-    // Clear ALL Blackboard Data (all contexts)
-    clearAllBlackboardData() {
-        for (const ctx in this.blackboards) {
-            this.clearBlackboardData(ctx);
-        }
-        return true;
-    }
-
-    // Push (Swipe Up): Save current and move to new
+    /**
+     * ACTION: Swipe Up (Push)
+     * - If in history: Go back to newer items
+     * - If in draft: Save draft to history, clear draft
+     */
     push(context = 'log') {
         const bb = this._getBB(context);
+
+        // Case 1: Navigating back towards Draft
         if (bb.view_index > 0) {
             bb.view_index--;
             this.saveLocal(context);
             return { action: 'nav', content: this.getDisplayContent(context) };
-        } else {
-            // VALIDATION: Prevent pushing empty content
+        }
+
+        // Case 2: In Draft Mode, try to push to stack
+        else {
+            // Validation: Don't push empty content
             if (!bb.current_draft || bb.current_draft.trim() === '') {
                 return { action: 'ignore', content: bb.current_draft };
             }
 
-            // Push current to history (Stack: newest first)
+            // Push to Stack
             bb.history.unshift(bb.current_draft);
+
+            // Limit Stack Size (Max 10)
             if (bb.history.length > 10) {
                 bb.history.pop();
             }
@@ -172,7 +193,10 @@ class DataManager {
         }
     }
 
-    // Pull (Swipe Down): View history
+    /**
+     * ACTION: Swipe Down (Pull)
+     * - Navigate into history (older items)
+     */
     pull(context = 'log') {
         const bb = this._getBB(context);
         const nextIndex = bb.view_index + 1;
@@ -187,8 +211,27 @@ class DataManager {
         }
     }
 
-    // --- Sync (Git Style) ---
-    // Note: Currently syncs only 'log' context. Can be extended to sync all.
+    clearBlackboardData(context = 'log') {
+        this.blackboards[context] = {
+            current_draft: '',
+            history: [],
+            view_index: 0
+        };
+        this.saveLocal(context);
+        return true;
+    }
+
+    clearAllBlackboardData() {
+        for (const ctx in this.blackboards) {
+            this.clearBlackboardData(ctx);
+        }
+        return true;
+    }
+
+    // ==========================================
+    // SECTION: Cloud Synchronization
+    // ==========================================
+
     async commit(context = 'log') {
         if (!this.userData.isLoggedIn) return { success: false, message: 'Not logged in' };
 
@@ -203,18 +246,23 @@ class DataManager {
             }
         };
 
-        return await this.post('sync.php', payload);
+        return await this._post('sync.php', payload);
     }
 
     async checkout(context = 'log') {
         if (!this.userData.isLoggedIn) return { success: false, message: 'Not logged in' };
 
-        const res = await this.post('sync.php', { action: 'checkout', username: this.userData.username, slot_type: context });
+        const res = await this._post('sync.php', {
+            action: 'checkout',
+            username: this.userData.username,
+            slot_type: context
+        });
+
         if (res.success) {
             const bb = this._getBB(context);
             bb.current_draft = res.data.current_draft;
             bb.history = res.data.history;
-            // Show most recent history item if available, otherwise show draft
+            // Auto-navigate to most recent history if available
             bb.view_index = (bb.history && bb.history.length > 0) ? 1 : 0;
             this.saveLocal(context);
             return { success: true, content: this.getDisplayContent(context) };
@@ -222,8 +270,11 @@ class DataManager {
         return res;
     }
 
-    // --- Helper ---
-    async post(endpoint, data) {
+    // ==========================================
+    // SECTION: Private Helpers
+    // ==========================================
+
+    async _post(endpoint, data) {
         try {
             const response = await fetch(this.apiBase + endpoint, {
                 method: 'POST',

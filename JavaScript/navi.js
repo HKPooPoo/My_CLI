@@ -233,6 +233,14 @@ class NaviManager {
             overlay.classList.add('hidden');
             this.setInitialPage();
         });
+
+        // Pending, will cause conflit, since logic = after clicked press-start-overlay then active Blackboard
+        // Reset when user leaves the tab/window
+        // document.addEventListener('visibilitychange', () => {
+        //     if (document.hidden) {
+        //         overlay.classList.remove('hidden');
+        //     }
+        // });
     }
 
     setInitialPage() {
