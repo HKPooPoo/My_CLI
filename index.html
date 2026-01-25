@@ -129,17 +129,28 @@
                             maxlength="69">
                         <input type="password" id="auth-password" class="terminal-input" placeholder="PASSCODE"
                             maxlength="255">
-                        <button id="btn-login" class="terminal-btn">LOGIN</button>
-                        <button id="btn-register" class="terminal-btn">REGISTER</button>
-                        <button id="btn-logout" class="terminal-btn" style="display: none;">LOGOUT</button>
+                        <button id="btn-login" class="terminal-btn" data-sound-click="./Sound/Click.mp3">LOGIN</button>
+                        <button id="btn-register" class="terminal-btn" data-sound-click="./Sound/Click.mp3"
+                            data-sound-click-1="./Sound/Click.mp3" data-sound-click-2="./Sound/Click.mp3"
+                            data-sound-click-3="./Sound/Cassette.mp3">REGISTER</button>
+                        <button id="btn-logout" class="terminal-btn" style="display: none;"
+                            data-sound-click="./Sound/Click.mp3" data-sound-click-1="./Sound/Click.mp3"
+                            data-sound-click-2="./Sound/Click.mp3"
+                            data-sound-click-3="./Sound/Cassette.mp3">LOGOUT</button>
                     </div>
 
                     <div class="sync-controls">
-                        <button id="btn-commit" class="terminal-btn">COMMIT</button>
-                        <button id="btn-checkout" class="terminal-btn">CHECKOUT</button>
+                        <button id="btn-commit" class="terminal-btn" data-sound-click="./Sound/Click.mp3"
+                            data-sound-click-1="./Sound/Click.mp3" data-sound-click-2="./Sound/Click.mp3"
+                            data-sound-click-3="./Sound/Cassette.mp3">COMMIT</button>
+                        <button id="btn-checkout" class="terminal-btn" data-sound-click="./Sound/Click.mp3"
+                            data-sound-click-1="./Sound/Click.mp3" data-sound-click-2="./Sound/Click.mp3"
+                            data-sound-click-3="./Sound/Cassette.mp3">CHECKOUT</button>
                     </div>
 
-                    <button id="btn-wipe" class="terminal-btn btn-state-2" style="margin-top: 32px;">WIPE
+                    <button id="btn-wipe" class="terminal-btn btn-state-2" data-sound-click="./Sound/Click.mp3"
+                        data-sound-click-1="./Sound/Click.mp3" data-sound-click-2="./Sound/Click.mp3"
+                        data-sound-click-3="./Sound/Erase.mp3" style="margin-top: 32px;">WIPE
                         LocalStorage</button>
                 </div>
             </div>

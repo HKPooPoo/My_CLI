@@ -66,6 +66,22 @@ class MultiStepButton {
         }
         // Add current state class
         this.element.classList.add(`btn-state-${this.state}`);
+
+        // Update Sound Context for SoundManager
+        // Logic: Check if element has 'data-sound-click-N' for current state
+        // If yes, temporarily set 'data-sound-click' to that specific sound
+        // If no, revert to default 'data-sound-click-default' (we need to store initial)
+
+        if (!this.initialSound) {
+            this.initialSound = this.element.getAttribute('data-sound-click');
+        }
+
+        const specificSound = this.element.getAttribute(`data-sound-click-${this.state}`);
+        if (specificSound) {
+            this.element.setAttribute('data-sound-click', specificSound);
+        } else if (this.initialSound) {
+            this.element.setAttribute('data-sound-click', this.initialSound);
+        }
     }
 
     // External reset if needed

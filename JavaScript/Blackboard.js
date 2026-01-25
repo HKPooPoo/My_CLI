@@ -165,7 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const btnRegister = document.getElementById('btn-register');
-    btnRegister.addEventListener('click', async () => {
+    new MultiStepButton(btnRegister, ['REGISTER', 'REGISTER x 3', 'REGISTER x 2', 'REGISTER !', 'CREATING...'], async () => {
         const [u, p] = userParams();
         if (!u || !p) return showNotification('Credentials required.', true);
 

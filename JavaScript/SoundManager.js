@@ -11,6 +11,7 @@
 class SoundManager {
     constructor() {
         this.cache = {}; // Cache Audio objects to avoid reloading
+        this.globalVolume = 0.2; // Global Volume Multiplier (0.0 to 1.0)
         this.init();
     }
 
@@ -18,7 +19,7 @@ class SoundManager {
         // Event Delegation: Listen to body to catch all current and future elements
 
         // 1. Click
-        document.body.addEventListener('click', (e) => this.handleInteraction(e, 'click'));
+        document.body.addEventListener('click', (e) => this.handleInteraction(e, 'click'), true);
 
         // 2. Hover (mouseenter does not bubble, so we use capture phase 'true' or mouseover)
         // Using mouseover with check to avoid excessive firing
@@ -63,20 +64,29 @@ class SoundManager {
         // For UI sounds, cloning is usually safer to prevent cutting off.
         // However, to save memory on mobile/web, let's try strict reset first.
 
+        // Calculate final volume
+        const finalVolume = (options.volume || 1.0) * this.globalVolume;
+
         if (!audio.paused) {
             // If already playing, clone it to allow overlap (Essential for typing)
             const clone = audio.cloneNode();
-            clone.volume = options.volume || 1.0;
+            clone.volume = finalVolume;
             clone.playbackRate = options.playbackRate || 1.0;
             clone.play().catch(e => console.warn('Sound clone error:', e));
         } else {
             audio.currentTime = 0;
-            audio.volume = options.volume || 1.0;
+            audio.volume = finalVolume;
             audio.playbackRate = options.playbackRate || 1.0;
             audio.play().catch(e => console.warn('Sound play error:', e));
         }
     }
 }
 
-// Auto-initialize when file is loaded
-window.soundManager = new SoundManager();
+// Auto-initialize when DOM is ready
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => {
+        window.soundManager = new SoundManager();
+    });
+} else {
+    window.soundManager = new SoundManager();
+}
