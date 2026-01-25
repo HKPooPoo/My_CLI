@@ -1,7 +1,7 @@
 class DataManager {
     constructor() {
         // URL updated by Cloudflare Tunnel (Warning: Changes on restart)
-        this.apiBase = 'https://often-publish-template-concord.trycloudflare.com/My/PHP/';
+        this.apiBase = 'https://worker-wild-ali-loads.trycloudflare.com/My/PHP/';
         this.userData = JSON.parse(localStorage.getItem('wpp_user_data')) || {
             username: null,
             level: 0,
@@ -237,3 +237,8 @@ class DataManager {
         }
     }
 }
+
+
+
+
+

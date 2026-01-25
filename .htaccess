@@ -1,0 +1,19 @@
+# Security hardening for My CLI
+
+# 1. Disable Directory Listing (Prevent seeing all files)
+Options -Indexes
+
+# 2. Deny access to sensitive files
+<FilesMatch "^(\.env|\.git|composer\.lock|package-lock\.json|\.antigravityignore)">
+    Require all denied
+</FilesMatch>
+
+# 3. Deny access to .git directory
+RedirectMatch 404 /\.git
+
+# 4. Basic Header Security
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+</IfModule>

@@ -146,7 +146,7 @@ if ($statusCF -ne "OFFLINE") {
             Write-Host "---------------------------------------------------" -ForegroundColor Yellow
 
             # --- AUTO-UPDATE DataManager.js ---
-            $JSFile = ".\JavaScript\DataManager.js"
+            $JSFile = "$PROJECT_ROOT\JavaScript\DataManager.js"
             if (Test-Path $JSFile) {
                 # Read content
                 $jsContent = Get-Content $JSFile -Raw

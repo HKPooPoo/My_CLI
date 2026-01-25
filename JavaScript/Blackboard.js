@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const authTitle = document.querySelector('.auth-title');
 
         if (dm.userData.isLoggedIn) {
-            statusDiv.innerHTML = `UID: <span class="truncated-name">${dm.userData.username}</span> (Lv${dm.userData.level})`;
+            statusDiv.innerHTML = `UID:&nbsp;<span class="truncated-name">${dm.userData.username}</span>&nbsp;(Lv${dm.userData.level})`;
             if (authTitle) authTitle.textContent = `WELCOME, ${dm.userData.username}`;
 
             uiLogin.forEach(el => { if (el) el.style.display = 'none'; });
@@ -136,9 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
     async function checkDB() {
         const isOnline = await dm.checkConnection();
         if (isOnline) {
-            dbStatusDiv.innerHTML = 'DB: <span class="db-dot online"></span>';
+            dbStatusDiv.innerHTML = 'DB:&nbsp;<span class="db-dot online"></span>';
         } else {
-            dbStatusDiv.innerHTML = 'DB: <span class="db-dot offline"></span>';
+            dbStatusDiv.innerHTML = 'DB:&nbsp;<span class="db-dot offline"></span>';
         }
     }
 
