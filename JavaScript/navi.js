@@ -1,283 +1,274 @@
-window.onload = init;
+/**
+ * NaviManager - Handles the main navigation interactions.
+ * Features:
+ * 1. Main Navigation clicking
+ * 2. Sub-navigation scrolling (Click, Wheel, Touch Swipe)
+ * 3. State persistence (remembers sub-menu position)
+ * 4. Audio feedback management
+ * 5. Visual sync with "Page" visibility
+ * 6. CRT Glitch effect coordination
+ */
+class NaviManager {
+    constructor() {
+        // State State
+        this.currentNaviIndex = 0;
+        this.currentSubNaviIndices = {}; // { 'navi-blackboard': 1, ... }
+        this.touchStartX = 0;
+        this.touchEndX = 0;
+        this.minSwipeDistance = 50;
 
-// Current state tracking
-let currentNaviIndex = 0;
-let currentSubNaviIndices = {}; // Track current sub-item for each navi item
-const audioCache = {}; // Cache for Audio objects
+        // Cache
+        this.audioCache = {};
+        this.navItems = document.querySelectorAll('.navi-item');
 
-function playAudio(url) {
-    if (!url) return;
-
-    if (!audioCache[url]) {
-        audioCache[url] = new Audio(url);
+        // Initialize
+        this.init();
     }
 
-    const sound = audioCache[url];
-    sound.currentTime = 0;
-    sound.play().catch(e => console.log('Audio play failed', e));
-}
+    init() {
+        this.setupNaviItems();
+        this.createGlitchElement();
+        this.initPressStart();
+        this.triggerGlitchEffect();
+    }
 
-function init() {
-    const navItems = document.querySelectorAll('.navi-item');
+    setupNaviItems() {
+        this.navItems.forEach((item, index) => {
+            const naviName = item.getAttribute('data-navi');
 
-    navItems.forEach((item, index) => {
-        const naviName = item.getAttribute('data-navi');
-        currentSubNaviIndices[naviName] = 0;
+            // Initialize memory for this navi category
+            this.currentSubNaviIndices[naviName] = 0;
 
-        item.addEventListener('click', () => onNaviClick(index));
+            // 1. Main Click Event
+            item.addEventListener('click', () => this.handleMainClick(index));
 
-        const container = item.querySelector('.sub-navi-item-container');
-        if (container) {
-            container.addEventListener('wheel', (e) => onWheel(e, naviName), { passive: false });
+            // 2. Sub-menu Container Events (Wheel & Touch)
+            const container = item.querySelector('.sub-navi-item-container');
+            if (container) {
+                // Wheel Scroll
+                container.addEventListener('wheel', (e) => this.handleWheel(e, naviName), { passive: false });
 
-            // Touch Events
-            container.addEventListener('touchstart', (e) => {
-                touchStartX = e.changedTouches[0].screenX;
-            }, { passive: true });
+                // Touch Swipe
+                container.addEventListener('touchstart', (e) => {
+                    this.touchStartX = e.changedTouches[0].screenX;
+                }, { passive: true });
 
-            container.addEventListener('touchend', (e) => {
-                touchEndX = e.changedTouches[0].screenX;
-                handleTouch(naviName);
-            });
-        }
+                container.addEventListener('touchend', (e) => {
+                    this.touchEndX = e.changedTouches[0].screenX;
+                    this.handleTouchSwipe(naviName);
+                });
+            }
 
-        const subItems = item.querySelectorAll('.sub-navi-item');
-        subItems.forEach((subItem, subIndex) => {
-            subItem.addEventListener('click', (e) => {
-                e.stopPropagation();
-                onSubNaviClick(naviName, subIndex);
+            // 3. Sub-item Click Events (Direct Selection)
+            const subItems = item.querySelectorAll('.sub-navi-item');
+            subItems.forEach((subItem, subIndex) => {
+                subItem.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent triggering main nav click
+                    this.handleSubClick(naviName, subIndex);
+                });
             });
         });
-    });
-
-    createGlitchElement();
-    // setInitialPage(); // Disable auto-init
-    initPressStart(); // Enable Press Start system
-    triggerGlitchEffect();
-}
-
-// Touch Event Logic
-let touchStartX = 0;
-let touchEndX = 0;
-const minSwipeDistance = 50; // Threshold for valid swipe
-
-function initPressStart() {
-    const overlay = document.getElementById('press-start-overlay');
-    if (!overlay) return;
-
-    overlay.addEventListener('click', () => {
-        overlay.classList.add('hidden');
-        setInitialPage();
-    });
-}
-
-function handleTouch(naviName) {
-    const distance = touchEndX - touchStartX;
-    const naviItem = document.querySelector(`.navi-item[data-navi="${naviName}"]`);
-    const subItems = naviItem.querySelectorAll('.sub-navi-item');
-    const totalItems = subItems.length;
-
-    if (totalItems === 0) return;
-
-    const currentIndex = currentSubNaviIndices[naviName] || 0;
-    let newIndex = currentIndex;
-
-    // Swift Left (Next Item)
-    if (distance < -minSwipeDistance) {
-        newIndex = (currentIndex + 1) % totalItems;
-    }
-    // Swipe Right (Previous Item)
-    else if (distance > minSwipeDistance) {
-        newIndex = (currentIndex - 1 + totalItems) % totalItems;
     }
 
-    if (newIndex !== currentIndex) {
-        currentSubNaviIndices[naviName] = newIndex;
-        activateSubItem(subItems[newIndex], naviName, newIndex, true);
+    // --- Audio System ---
+    playAudio(url) {
+        if (!url) return;
+        if (!this.audioCache[url]) {
+            this.audioCache[url] = new Audio(url);
+        }
+        const sound = this.audioCache[url];
+        sound.currentTime = 0;
+        sound.play().catch(e => console.warn('Audio play failed', e));
+    }
+
+    // --- Interaction Handlers ---
+
+    // 1. Main Navigation Click
+    handleMainClick(index) {
+        const clickedItem = this.navItems[index];
+        const naviName = clickedItem.getAttribute('data-navi');
+
+        // Toggle Active State
+        this.navItems.forEach((item, i) => {
+            if (i !== index) item.classList.remove('active');
+        });
+
+        const isChanging = this.currentNaviIndex !== index;
+        this.currentNaviIndex = index;
+        this.activateNaviItem(clickedItem, isChanging);
+
+        // Restore Memory: Activate the last visited sub-item
+        const subIndex = this.currentSubNaviIndices[naviName] || 0;
+        const subItems = clickedItem.querySelectorAll('.sub-navi-item');
+        if (subItems[subIndex]) {
+            this.activateSubItem(subItems[subIndex], naviName, subIndex, false, false);
+        }
+    }
+
+    // 2. Sub Navigation Click
+    handleSubClick(naviName, subIndex) {
+        this.updateSubIndex(naviName, subIndex);
+    }
+
+    // 3. Mouse Wheel Scroll
+    handleWheel(event, naviName) {
+        event.preventDefault();
+        const { subItems, currentIndex, totalItems } = this.getNaviContext(naviName);
+        if (totalItems === 0) return;
+
+        const newIndex = event.deltaY > 0
+            ? (currentIndex + 1) % totalItems
+            : (currentIndex - 1 + totalItems) % totalItems;
+
+        this.updateSubIndex(naviName, newIndex);
+    }
+
+    // 4. Touch Swipe
+    handleTouchSwipe(naviName) {
+        const distance = this.touchEndX - this.touchStartX;
+        const { currentIndex, totalItems } = this.getNaviContext(naviName);
+
+        if (totalItems === 0) return;
+        let newIndex = currentIndex;
+
+        // Swipe Left -> Next
+        if (distance < -this.minSwipeDistance) {
+            newIndex = (currentIndex + 1) % totalItems;
+        }
+        // Swipe Right -> Prev
+        else if (distance > this.minSwipeDistance) {
+            newIndex = (currentIndex - 1 + totalItems) % totalItems;
+        }
+
+        if (newIndex !== currentIndex) {
+            this.updateSubIndex(naviName, newIndex);
+        }
+    }
+
+    // --- Core Logic ---
+
+    // Update state and UI for a sub-item change
+    updateSubIndex(naviName, newIndex) {
+        this.currentSubNaviIndices[naviName] = newIndex;
+
+        const naviItem = document.querySelector(`.navi-item[data-navi="${naviName}"]`);
+        const subItems = naviItem.querySelectorAll('.sub-navi-item');
+
+        this.activateSubItem(subItems[newIndex], naviName, newIndex, true);
+    }
+
+    // Helper to get current context data for a navi item
+    getNaviContext(naviName) {
+        const naviItem = document.querySelector(`.navi-item[data-navi="${naviName}"]`);
+        const subItems = naviItem.querySelectorAll('.sub-navi-item');
+        return {
+            subItems: subItems,
+            totalItems: subItems.length,
+            currentIndex: this.currentSubNaviIndices[naviName] || 0
+        };
+    }
+
+    // --- Visual Activation ---
+
+    activateNaviItem(naviItem, playSound = true) {
+        naviItem.classList.add('active');
+        if (playSound) {
+            this.playAudio(naviItem.getAttribute('data-sound-main'));
+        }
+    }
+
+    activateSubItem(subItem, naviName, index, triggerGlitch = true, playSound = true) {
+        const naviItem = document.querySelector(`.navi-item[data-navi="${naviName}"]`);
+        const container = naviItem.querySelector('.sub-navi-item-container');
+        const track = naviItem.querySelector('.sub-navi-track');
+        const subItems = naviItem.querySelectorAll('.sub-navi-item');
+
+        // UI Reset
+        subItems.forEach(item => item.classList.remove('active'));
+        subItem.classList.add('active');
+
+        // Center the active item logic
+        const itemWidth = subItem.offsetWidth;
+        const containerWidth = container.offsetWidth;
+
+        // Calculate offset (width of all previous items)
+        let offset = 0;
+        for (let i = 0; i < index; i++) {
+            offset += subItems[i].offsetWidth;
+        }
+
+        const itemCenter = offset + (itemWidth / 2);
+        const containerCenter = containerWidth / 2;
+        const scrollOffset = containerCenter - itemCenter;
+
+        // Apply Transform
+        track.style.transform = `translateX(${scrollOffset}px)`;
+
+        // Audio & Page Switch
+        if (playSound) {
+            this.playAudio(naviItem.getAttribute('data-sound-sub'));
+        }
+
+        const pageName = subItem.getAttribute('data-page');
+        this.switchPage(pageName, triggerGlitch);
+    }
+
+    switchPage(pageName, triggerGlitch = true) {
+        const allPages = document.querySelectorAll('.page');
+        allPages.forEach(page => page.classList.remove('active'));
+
+        const targetPage = document.getElementById(pageName);
+        if (targetPage) {
+            targetPage.classList.add('active');
+            if (triggerGlitch) this.triggerGlitchEffect();
+        }
+    }
+
+    // --- CRT / Glitch / Start Overlay Effects ---
+
+    initPressStart() {
+        const overlay = document.getElementById('press-start-overlay');
+        if (!overlay) return;
+        overlay.addEventListener('click', () => {
+            overlay.classList.add('hidden');
+            this.setInitialPage();
+        });
+    }
+
+    setInitialPage() {
+        // Hardcoded initial state logic (Blackboard -> Log)
+        const firstNaviItem = document.querySelector('.navi-item[data-navi="navi-blackboard"]');
+        if (!firstNaviItem) return;
+
+        this.currentNaviIndex = 0;
+        this.activateNaviItem(firstNaviItem, true);
+
+        const firstSubItem = firstNaviItem.querySelector('.sub-navi-item[data-page="page-blackboard-log"]');
+        if (firstSubItem) {
+            this.activateSubItem(firstSubItem, 'navi-blackboard', 0, true, false);
+        }
+    }
+
+    createGlitchElement() {
+        const glitchElement = document.createElement('div');
+        glitchElement.className = 'crt-noise';
+        glitchElement.id = 'crt-noise';
+        document.body.appendChild(glitchElement);
+    }
+
+    triggerGlitchEffect() {
+        const glitchElement = document.getElementById('crt-noise');
+        if (!glitchElement) return;
+
+        glitchElement.classList.remove('active');
+        void glitchElement.offsetHeight; // Force reflow
+        glitchElement.classList.add('active');
+
+        setTimeout(() => glitchElement.classList.remove('active'), 1200);
     }
 }
 
-function createGlitchElement() {
-    const glitchElement = document.createElement('div');
-    glitchElement.className = 'crt-noise';
-    glitchElement.id = 'crt-noise';
-    document.body.appendChild(glitchElement);
-}
-
-function triggerGlitchEffect() {
-    const glitchElement = document.getElementById('crt-noise');
-    if (!glitchElement) return;
-
-    glitchElement.classList.remove('active');
-    void glitchElement.offsetHeight; // Force reflow
-    glitchElement.classList.add('active');
-
-    setTimeout(() => glitchElement.classList.remove('active'), 1200);
-}
-
-/*REMEMBER TO SYNC THIS AFTER CHANGES*/
-function setInitialPage() {
-    /*1*/
-    const firstNaviItem = document.querySelector('.navi-item[data-navi="navi-blackboard"]');
-    if (!firstNaviItem) return;
-
-    currentNaviIndex = 0;
-    activateNaviItem(firstNaviItem, true);
-
-    /*2*/
-    const firstSubItem = firstNaviItem.querySelector('.sub-navi-item[data-page="page-blackboard-log"]');
-    if (firstSubItem) {
-        /*3*/
-        activateSubItem(firstSubItem, 'navi-blackboard', 0, true, false);
-    }
-}
-
-function onNaviClick(index) {
-    const navItems = document.querySelectorAll('.navi-item');
-    const clickedItem = navItems[index];
-    const naviName = clickedItem.getAttribute('data-navi');
-
-    navItems.forEach((item, i) => {
-        if (i !== index) item.classList.remove('active');
-    });
-
-    const isChanging = currentNaviIndex !== index;
-    currentNaviIndex = index;
-    activateNaviItem(clickedItem, isChanging);
-
-    const subIndex = currentSubNaviIndices[naviName] || 0;
-    const subItems = clickedItem.querySelectorAll('.sub-navi-item');
-    if (subItems[subIndex]) {
-        activateSubItem(subItems[subIndex], naviName, subIndex, false, false);
-    }
-}
-
-function onSubNaviClick(naviName, subIndex) {
-    const naviItem = document.querySelector(`.navi-item[data-navi="${naviName}"]`);
-    const subItems = naviItem.querySelectorAll('.sub-navi-item');
-
-    currentSubNaviIndices[naviName] = subIndex;
-    activateSubItem(subItems[subIndex], naviName, subIndex, true);
-}
-
-function activateNaviItem(naviItem, playSound = true) {
-    naviItem.classList.add('active');
-
-    if (playSound) {
-        const soundUrl = naviItem.getAttribute('data-sound-main');
-        playAudio(soundUrl);
-    }
-}
-
-
-
-function onWheel(event, naviName) {
-    event.preventDefault();
-
-    const naviItem = document.querySelector(`.navi-item[data-navi="${naviName}"]`);
-    const subItems = naviItem.querySelectorAll('.sub-navi-item');
-    const totalItems = subItems.length;
-
-    if (totalItems === 0) return;
-
-    const currentIndex = currentSubNaviIndices[naviName] || 0;
-    const newIndex = event.deltaY > 0
-        ? (currentIndex + 1) % totalItems
-        : (currentIndex - 1 + totalItems) % totalItems;
-
-    currentSubNaviIndices[naviName] = newIndex;
-    activateSubItem(subItems[newIndex], naviName, newIndex, true);
-}
-
-function activateSubItem(subItem, naviName, index, triggerGlitch = true, playSound = true) {
-    const naviItem = document.querySelector(`.navi-item[data-navi="${naviName}"]`);
-    const container = naviItem.querySelector('.sub-navi-item-container');
-    const track = naviItem.querySelector('.sub-navi-track');
-    const subItems = naviItem.querySelectorAll('.sub-navi-item');
-
-    // Remove active class from all sub-items in this container
-    subItems.forEach(item => item.classList.remove('active'));
-
-    // Add active class to current sub-item
-    subItem.classList.add('active');
-
-    // Calculate scroll position to center the active item under the parent navi-item
-    // The container is centered via left: 50%, translateX(-50%)
-    // We want to position the active item at the center of the container
-
-    const itemWidth = subItem.offsetWidth;
-    const containerWidth = container.offsetWidth;
-
-    // Calculate offset: sum of widths of all items before the active one
-    let offset = 0;
-    for (let i = 0; i < index; i++) {
-        offset += subItems[i].offsetWidth;
-    }
-
-    // We want to center the active item in the container
-    // Container center is at containerWidth / 2
-    // Active item center should be at: offset + itemWidth / 2
-    // So we need to shift the track left by: (offset + itemWidth/2) - containerWidth/2
-    const itemCenter = offset + (itemWidth / 2);
-    const containerCenter = containerWidth / 2;
-    const scrollOffset = containerCenter - itemCenter;
-
-    // Apply transform to the TRACK (items), not the container
-    track.style.transform = `translateX(${scrollOffset}px)`;
-
-    if (playSound) {
-        const soundUrl = naviItem.getAttribute('data-sound-sub');
-        playAudio(soundUrl);
-    }
-
-    // Switch page
-    const pageName = subItem.getAttribute('data-page');
-    switchPage(pageName, triggerGlitch);
-}
-
-function switchPage(pageName, triggerGlitch = true) {
-    const allPages = document.querySelectorAll('.page');
-    allPages.forEach(page => page.classList.remove('active'));
-
-    const targetPage = document.getElementById(pageName);
-    if (targetPage) {
-        targetPage.classList.add('active');
-        if (triggerGlitch) triggerGlitchEffect();
-    }
-}
-
-/*
-Scrolling behavior demonstration based on the 6 steps in comments:
-
-Step1: Initial state - sub-navi-item-1 is centered under parent
-            |
-            v
-            1__2__3_
-
-Step2: Scroll down (right) - move to item 2
-            |
-            v
-         1__2__3__4_
-
-Step3: Scroll down (right) - move to item 3
-            |
-            v
-       1__2__3__4__5
-
-Step4: Scroll down (right) - move to item 4
-            |
-            v
-      _2__3__4__5
-
-Step5: Scroll down (right) - move to item 5
-            |
-            v
-      _3__4__5
-
-Step6: Scroll down (right) - wrap around to item 1
-            |
-            v
-            1__2__3_
-
-When at Step1 and scroll up (left): wrap to Step5 (item 5)
-*/
+// Start the Manager when DOM is ready
+window.onload = () => {
+    window.naviManager = new NaviManager();
+};

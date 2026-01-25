@@ -18,6 +18,7 @@
     <script src="./JavaScript/MultiStepButton.js"></script>
     <script src="./JavaScript/Blackboard.js"></script>
     <script src="./JavaScript/Preloader.js"></script>
+    <script src="./JavaScript/SoundManager.js"></script>
 </head>
 
 <body>
@@ -102,23 +103,23 @@
                 <div id="stack-status-log" class="stack-status">
                     INITIALIZING...
                 </div>
-                <button class="push" id="btn-push-log"></button>
+                <button class="push" data-sound-click="./Sound/Click.mp3" id="btn-push-log"></button>
                 <div class="blackboard-container">
                     <textarea id="blackboard-input-log" class="blackboard-input"
                         placeholder="Initiating Blackboard Terminal..."></textarea>
                 </div>
-                <button class="pull" id="btn-pull-log"></button>
+                <button class="pull" data-sound-click="./Sound/Click.mp3" id="btn-pull-log"></button>
             </div>
             <div class="page" id="page-blackboard-todo">
                 <div id="stack-status-todo" class="stack-status">
                     INITIALIZING...
                 </div>
-                <button class="push" id="btn-push-todo"></button>
+                <button class="push" data-sound-click="./Sound/Click.mp3" id="btn-push-todo"></button>
                 <div class="blackboard-container">
                     <textarea id="blackboard-input-todo" class="blackboard-input"
                         placeholder="Initiating TODO Terminal..."></textarea>
                 </div>
-                <button class="pull" id="btn-pull-todo"></button>
+                <button class="pull" data-sound-click="./Sound/Click.mp3" id="btn-pull-todo"></button>
             </div>
             <div class="page" id="page-blackboard-misc">
                 <div class="auth-container">

@@ -14,7 +14,9 @@
         './Sound/UIPipboyOK.mp3',
         './Sound/UIPipboyOKPress.mp3',
         './Sound/UISelectOff.mp3',
-        './Sound/UISelectOn.mp3'
+        './Sound/UISelectOn.mp3',
+        './Sound/Click.mp3',
+        './Sound/Cassette.mp3'
     ];
 
     // Global cache to prevent garbage collection
