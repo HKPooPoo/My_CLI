@@ -156,7 +156,7 @@ if ($statusCF -ne "OFFLINE") {
                 $newJsContent = $jsContent -replace "this\.apiBase = '.*';", "this.apiBase = '$tunnelUrl/My/PHP/';"
                 
                 # Write back
-                Set-Content -Path $JSFile -Value $newJsContent -Encoding Ascii
+                Set-Content -Path $JSFile -Value $newJsContent -Encoding Ascii -NoNewline
                 Write-Host " [AUTO-FIX] Updated DataManager.js with new API Base URL" -ForegroundColor Green
             }
             else {
