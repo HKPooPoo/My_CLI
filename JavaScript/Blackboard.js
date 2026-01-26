@@ -225,7 +225,7 @@ class BlackboardManager {
     // --- Sync Logic ---
     initSyncListeners() {
         // Commit
-        new MultiStepButton(this.elements.btnCommit, ['COMMIT', 'COMMIT x 3', 'COMMIT x 2', 'COMMIT !', 'UPLOADING...'], async () => {
+        new MultiStepButton(this.elements.btnCommit, ['<ruby>COMMIT<rt>UPLOAD</rt></ruby>', 'COMMIT x 3', 'COMMIT x 2', 'COMMIT !', 'UPLOADING...'], async () => {
             const resLog = await this.dm.commit('log');
             const resTodo = await this.dm.commit('todo');
 
@@ -242,7 +242,7 @@ class BlackboardManager {
         });
 
         // Checkout
-        new MultiStepButton(this.elements.btnCheckout, ['CHECKOUT', 'CHECKOUT x 3', 'CHECKOUT x 2', 'CHECKOUT !', 'DOWNLOADING...'], async () => {
+        new MultiStepButton(this.elements.btnCheckout, ['<ruby>CHECKOUT<rt>DOWNLOAD</rt></ruby>', 'CHECKOUT x 3', 'CHECKOUT x 2', 'CHECKOUT !', 'DOWNLOADING...'], async () => {
             const resLog = await this.dm.checkout('log');
             const resTodo = await this.dm.checkout('todo');
 

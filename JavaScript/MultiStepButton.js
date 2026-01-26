@@ -57,7 +57,13 @@ class MultiStepButton {
     }
 
     updateLabel() {
-        this.element.textContent = this.labels[this.state];
+        // this.element.textContent = this.labels[this.state];
+        /*
+        Replaced by below, such that
+        new MultiStepButton(this.elements.btnCommit, ['<ruby>COMMIT<rt>UPLOAD</rt></ruby>', 'COMMIT x 3', 'COMMIT x 2', 'COMMIT !', 'UPLOADING...'], async () => {
+        is acceptable in Blackboard.js
+        */
+        this.element.innerHTML = this.labels[this.state];
 
         // Update styling classes
         // Remove all state classes
