@@ -798,6 +798,14 @@ h2 {
     }
 }
 
+.terminal-btn ruby {
+    ruby-position: over;
+}
+
+.terminal-btn ruby rt {
+    font-size: 0.64rem;
+}
+
 .sync-controls {
     display: flex;
     gap: 16px;

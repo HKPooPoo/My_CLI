@@ -18,7 +18,6 @@ class NaviManager {
         this.minSwipeDistance = 50;
 
         // Cache
-        this.audioCache = {};
         this.navItems = document.querySelectorAll('.navi-item');
 
         // Initialize
@@ -73,12 +72,13 @@ class NaviManager {
     // --- Audio System ---
     playAudio(url) {
         if (!url) return;
-        if (!this.audioCache[url]) {
-            this.audioCache[url] = new Audio(url);
+        if (window.soundManager) {
+            window.soundManager.play(url);
+        } else {
+            // Fallback if SoundManager isn't ready for some reason
+            const audio = new Audio(url);
+            audio.play().catch(e => console.warn('Audio fallback play failed', e));
         }
-        const sound = this.audioCache[url];
-        sound.currentTime = 0;
-        sound.play().catch(e => console.warn('Audio play failed', e));
     }
 
     // --- Interaction Handlers ---
@@ -229,10 +229,33 @@ class NaviManager {
     initPressStart() {
         const overlay = document.getElementById('press-start-overlay');
         if (!overlay) return;
+
+        let justGainedFocus = false;
+
+        // Track focus events to prevent immediate unlock on window switch
+        // Avoid allow trigger press-start-overlay when window switch
+        // User must first 'focus' on the browser (for 200ms), then allow interact with press-start-overlay
+        window.addEventListener('focus', () => {
+            justGainedFocus = true;
+            setTimeout(() => { justGainedFocus = false; }, 200);
+        });
+
+        // Interaction Logic: Only unlock if focused to prevent accidental misclick from window switching
         overlay.addEventListener('click', () => {
+            if (!document.hasFocus() || justGainedFocus) {
+                return;
+            }
+
             overlay.classList.add('hidden');
             this.setInitialPage();
         });
+
+        // Add visual feedback (Optional but good for UX)
+        overlay.addEventListener('mousedown', () => {
+            // Only show active state if we are already focused and not in the "just focused" guard period
+            if (document.hasFocus() && !justGainedFocus) overlay.classList.add('active');
+        });
+        overlay.addEventListener('mouseup', () => overlay.classList.remove('active'));
 
         // Pending, will cause conflit, since logic = after clicked press-start-overlay then active Blackboard
         // Reset when user leaves the tab/window
