@@ -27,17 +27,22 @@ class DBConnection
             if (strpos(trim($line), '#') === 0)
                 continue;
             list($name, $value) = explode('=', $line, 2);
-            $_ENV[trim($name)] = trim($value);
+            $name = trim($name);
+            // Only set if not already defined (Docker env vars take priority)
+            if (!isset($_ENV[$name]) && !getenv($name)) {
+                $_ENV[$name] = trim($value);
+            }
         }
     }
 
     private function connect()
     {
-        $host = $_ENV['DB_HOST'] ?? 'localhost';
-        $db = $_ENV['DB_NAME'] ?? 'my_cli_db';
-        $user = $_ENV['DB_USER'] ?? 'root';
-        $pass = $_ENV['DB_PASS'] ?? '';
-        $charset = $_ENV['DB_CHARSET'] ?? 'utf8mb4';
+        // getenv() for Docker, $_ENV for .env file fallback
+        $host = getenv('DB_HOST') ?: ($_ENV['DB_HOST'] ?? 'localhost');
+        $db = getenv('DB_NAME') ?: ($_ENV['DB_NAME'] ?? 'my_cli_db');
+        $user = getenv('DB_USER') ?: ($_ENV['DB_USER'] ?? 'root');
+        $pass = getenv('DB_PASS') ?: ($_ENV['DB_PASS'] ?? '');
+        $charset = getenv('DB_CHARSET') ?: ($_ENV['DB_CHARSET'] ?? 'utf8mb4');
 
         $dsn = "mysql:host=$host;dbname=$db;charset=$charset";
         $options = [

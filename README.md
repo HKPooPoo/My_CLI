@@ -14,6 +14,48 @@
 *   **Backend:** PHP, MySQL.
 *   **Infrastructure:** PowerShell Automation, Apache (XAMPP), Cloudflare Tunnel.
 *   **Version Control:** Git, GitHub.
+*   **Containerization:** Docker, Docker Compose.
+
+---
+
+## 1.1 快速開始 - Docker (Quick Start)
+
+> [!TIP]
+> 使用 Docker 可以一鍵啟動完整開發環境，無需安裝 XAMPP 或 MySQL。
+
+**Prerequisites:**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (Windows/Mac/Linux)
+
+**Steps:**
+```bash
+# 1. Clone 專案
+git clone https://github.com/hkpoopoo/My.git
+cd My
+
+# 2. 建立環境變數
+cp .env.example .env
+
+# 3. 編輯 .env，設定你的資料庫密碼
+# DB_PASS=your_secure_password
+
+# 4. 啟動所有服務
+docker-compose up -d
+
+# 5. 訪問應用
+# Frontend:    http://localhost:8080
+# phpMyAdmin:  http://localhost:8081
+
+# 6. 訪問數據庫
+# 如果你想使用我的本地數據庫: 
+#   DataManager.js -> Uncomment this.apiBase = 'https://worker-wild-ali-loads.trycloudflare.com/My/PHP/';
+# 如果你想使用自己的電腦測試數據庫 (空白): 
+#   DataManager.js -> Uncomment this.apiBase = 'http://localhost:8080/PHP/';
+```
+
+**停止服務:**
+```bash
+docker-compose down
+```
 
 ---
 

@@ -1,0 +1,33 @@
+# Git
+.git
+.gitignore
+
+# Environment (contains secrets)
+.env
+
+# IDE
+.vscode
+.idea
+
+# Logs
+*.log
+tunnel.log
+
+# Windows executables and shortcuts
+*.exe
+*.lnk
+
+# XAMPP specific
+cloudflared.exe
+XAMPP Control Panel.lnk
+MySQL Workbench 8.0 CE.lnk
+
+# Development scripts (not needed in container)
+launch_backend.ps1
+launch_backend.bat
+
+# Design docs (not needed in container)
+Design/
+
+# Agent files
+.agent/

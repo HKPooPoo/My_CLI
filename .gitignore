@@ -8,3 +8,4 @@ tunnel.log
 *.log
 cloudflared.exe
 .env
+!My_CLI/

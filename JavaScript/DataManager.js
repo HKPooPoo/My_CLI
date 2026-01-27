@@ -10,6 +10,8 @@ class DataManager {
     constructor() {
         // --- Configuration ---
         // URL updated by Cloudflare Tunnel automatically
+        // Docker: Replace by http://localhost:8080/PHP/ if you want to test DB by yourself (without my host)
+        // this.apiBase = 'http://localhost:8080/PHP/';
         this.apiBase = 'https://worker-wild-ali-loads.trycloudflare.com/My/PHP/';
 
         // --- State Initialization ---
