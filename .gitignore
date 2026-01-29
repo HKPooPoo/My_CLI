@@ -8,4 +8,7 @@ tunnel.log
 *.log
 cloudflared.exe
 .env
-!My_CLI/
+\!My_CLI/
+\!My_CLI_on_Rails/
+\!My_CLI_Re/
+*zip
